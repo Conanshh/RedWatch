@@ -1,16 +1,24 @@
-from fastapi import FastAPI
-from playwright.async_api import async_playwright
-import uvicorn
+import os
 import re
+import uvicorn
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from playwright.async_api import async_playwright
+from dotenv import load_dotenv
+
+# Carga variables desde .env en local, en Render se configuran en el panel
+load_dotenv()
 
 app = FastAPI()
+
+# Leemos la URL de Vercel desde el entorno, si no existe usamos localhost
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://tu-proyecto-frontend.vercel.app", # URL de Vercel
-        "http://localhost:3000"                    # Para seguir probando local
+        FRONTEND_URL,          # URL real de tu Vercel
+        "http://localhost:3000" # Para pruebas locales
     ], 
     allow_credentials=True,
     allow_methods=["*"],
@@ -21,7 +29,11 @@ app.add_middleware(
 async def obtener_tiempos(codigo: str):
     print(f"\n--- CONSULTANDO PARADERO: {codigo.upper()} ---")
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        # Launch con argumentos para entornos Docker/Cloud (necesario en Render)
+        browser = await p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox"]
+        )
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
@@ -29,8 +41,8 @@ async def obtener_tiempos(codigo: str):
         
         try:
             url = f"https://www.red.cl/planifica-tu-viaje/cuando-llega/?codsimt={codigo.upper()}"
-            await page.goto(url, wait_until="networkidle")
-            await page.wait_for_selector(".tabla-paradero", timeout=10000)
+            await page.goto(url, wait_until="networkidle", timeout=20000)
+            await page.wait_for_selector(".tabla-paradero", timeout=15000)
             
             filas = await page.query_selector_all(".tabla-paradero tbody tr")
             servicios = []
@@ -41,21 +53,16 @@ async def obtener_tiempos(codigo: str):
                 
                 if linea_el and tiempo_el:
                     linea = (await linea_el.inner_text()).strip()
-                    # Limpiamos el texto de posibles avisos de desvío o iconos
                     raw_text = await tiempo_el.inner_text()
-                    # Quitamos "Desvío planificado" si aparece en el texto capturado
                     clean_text = raw_text.replace("Desvío planificado", "").strip()
                     
                     distancia = "99.9km"
                     tiempo = clean_text
                     
-                    # Usamos Regex para buscar el kilometraje (ej: 1.3km)
-                    # Esto es mucho más seguro que el split()
                     match_distancia = re.search(r"(\d+(\.\d+)?km)", clean_text)
                     if match_distancia:
                         distancia = match_distancia.group(1)
                     
-                    # Extraemos lo que está entre paréntesis para el tiempo
                     match_tiempo = re.search(r"\((.*?)\)", clean_text)
                     if match_tiempo:
                         tiempo = match_tiempo.group(1)
@@ -69,8 +76,6 @@ async def obtener_tiempos(codigo: str):
                         "alerta": "⚠️" if "Desvío" in raw_text else ""
                     })
 
-            # Ordenamos: primero las que tengan menor kilometraje numérico
-            # Convertimos "2.3km" a 2.3 para poder comparar
             def sort_key(s):
                 try:
                     return float(s['distancia'].replace('km', ''))
@@ -78,17 +83,10 @@ async def obtener_tiempos(codigo: str):
                     return 999.0
 
             servicios_ordenados = sorted(servicios, key=sort_key)
-            
-            # Formateamos el mensaje para el reloj
-            notif_parts = []
-            for s in servicios_ordenados:
-                alerta_str = s['alerta']
-                notif_parts.append(f"🚌 {s['linea']}: {s['distancia']} ({s['llegada']}){alerta_str}")
-            
+            notif_parts = [f"🚌 {s['linea']}: {s['distancia']} ({s['llegada']}){s['alerta']}" for s in servicios_ordenados]
             mensaje_reloj = "\n".join(notif_parts)
 
             await browser.close()
-            print(f"✅ Éxito: {len(servicios)} buses procesados.")
             return {
                 "paradero": codigo.upper(),
                 "notificacion": mensaje_reloj,
@@ -96,9 +94,10 @@ async def obtener_tiempos(codigo: str):
             }
 
         except Exception as e:
-            print(f"❌ Error: {str(e)}")
             await browser.close()
             return {"error": "Fallo al capturar", "detalle": str(e)}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Render usa el puerto 10000 por defecto, pero es mejor leerlo del entorno
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

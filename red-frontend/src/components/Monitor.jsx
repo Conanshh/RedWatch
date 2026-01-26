@@ -4,7 +4,7 @@ const BASE_PARADEROS = ["PB719", "PB720", "PC123", "PA456", "PD789"];
 const LOADING_STEPS = ["Conectando...", "Consultando Red...", "Procesando...", "Casi listo..."];
 
 // URL dinámica: En Vercel usará la de Render, en local usará localhost
-const API_URL = process.env.API_URL || "http://localhost:8000";
+const API_URL = process.env.REACT_API_URL || "http://localhost:8000";
 
 export default function Monitor() {
   const [input, setInput] = useState('');
