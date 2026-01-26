@@ -4,78 +4,10 @@ import Monitor from '../components/Monitor.jsx';
 ---
 
 <Layout title="RedWatch - Dark Edition">
-<header class="main-header">
-    <div class="brand">
-        <h1>Red<span>Watch</span></h1>
-        <div class="status-dot"></div>
-    </div>
-    
-    <p class="hero-text">
-        Consulta paraderos y buses en camino.<br />
-        Usa <strong>Favoritos</strong> y <strong>Alertas en tu celular</strong><br />
-        para que nunca se te pase la micro.
-    </p>
-</header>
+	<header>
+		<h1>Red<span>Watch</span></h1>
+		<p>Tiempos de micro en tiempo real</p>
+	</header>
 
 	<Monitor client:load />
 </Layout>
-
-<style>
-    .main-header {
-        padding: 2.5rem 1rem 0.8rem; /* Reducido el espacio inferior (0.8rem) */
-        text-align: center;
-        /* Degradado más corto y definido para que se note el final */
-        background: linear-gradient(to bottom, #0f0f0f 0%, #000 70%);
-    }
-
-    .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 0.8rem;
-    }
-
-    h1 {
-        font-size: 2.4rem;
-        font-weight: 900;
-        letter-spacing: -1.5px;
-        margin: 0;
-        color: #fff;
-        line-height: 1;
-    }
-
-    h1 span {
-        color: #e00;
-    }
-
-    /* La luz ahora es verde */
-    .status-dot {
-        width: 10px;
-        height: 10px;
-        background: #09ef27;
-        border-radius: 50%;
-        box-shadow: 0 0 12px rgba(0, 255, 136, 0.6);
-        animation: pulse 2.5s infinite;
-        margin-top: 5px;
-    }
-
-    .hero-text {
-        color: #999;
-        font-size: 0.9rem; /* Ligeramente más pequeña para proporcionalidad */
-        max-width: 320px; /* Estrechado para forzar una forma más armónica */
-        margin: 0 auto;
-        line-height: 1.5;
-        font-weight: 300;
-    }
-
-    .hero-text strong {
-        color: #eee;
-        font-weight: 600;
-    }
-
-    @keyframes pulse {
-        0% { transform: scale(0.95); opacity: 0.5; }
-        50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 18px rgba(0, 255, 136, 0.8); }
-        100% { transform: scale(0.95); opacity: 0.5; }
-    }
-</style>
