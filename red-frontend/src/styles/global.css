@@ -1,0 +1,125 @@
+:root {
+  --bg-color: #ffffff;
+  --card-bg: #f9f9f9;
+  --text-main: #1a1a1a;
+  --red-accent: #e30613;
+  --blue-neon: #007bff;
+  --border-color: #dddddd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #000000;
+    --card-bg: #111111;
+    --text-main: #ffffff;
+    --red-accent: #ff0000;
+    --blue-neon: #00f2ff;
+    --border-color: #333333;
+  }
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+.container { max-width: 450px; margin: 0 auto; padding: 2rem 1rem; }
+
+header { text-align: center; margin-bottom: 2rem; }
+header h1 span { color: var(--red-accent); }
+
+/* Buscador */
+.search-wrapper { position: relative; width: 100%; }
+.search-group { display: flex; gap: 10px; }
+
+.main-input {
+  flex: 1; padding: 14px; border-radius: 12px;
+  border: 2px solid var(--border-color);
+  background: var(--card-bg); color: var(--text-main);
+  outline: none;
+}
+
+.main-input:focus { border-color: var(--blue-neon); }
+
+.btn-consultar {
+  background: var(--red-accent); color: white; border: none;
+  padding: 0 20px; border-radius: 12px; font-weight: bold;
+}
+
+.btn-consultar:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Sugerencias mejoradas */
+.suggestions {
+  position: absolute; top: 60px; left: 0; right: 0;
+  background: var(--card-bg); border: 1px solid var(--border-color);
+  border-radius: 12px; list-style: none; padding: 5px; z-index: 100;
+}
+
+.suggestions li {
+  padding: 12px; border-radius: 8px; cursor: pointer; color: var(--text-main);
+}
+
+/* Clase para cuando usas las flechas del teclado */
+.suggestions li.selected, .suggestions li:hover {
+  background: var(--border-color);
+  color: var(--blue-neon);
+  font-weight: bold;
+}
+
+.result-card {
+  margin-top: 2rem; background: var(--card-bg);
+  border-radius: 16px; border-left: 5px solid var(--blue-neon);
+  overflow: hidden;
+}
+
+.result-body {
+  padding: 20px; font-family: monospace; color: var(--blue-neon); white-space: pre-line;
+}
+
+/* Overlay de Carga */
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* Spinner Neón */
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(0, 242, 255, 0.1);
+  border-left-color: var(--blue-neon);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  filter: drop-shadow(0 0 10px var(--blue-neon));
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--blue-neon);
+  font-family: monospace;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.loading-subtext {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-top: 10px;
+}

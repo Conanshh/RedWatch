@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Monitor from '../components/Monitor.jsx';
+---
+
+<Layout title="RedWatch - Dark Edition">
+	<header>
+		<h1>Red<span>Watch</span></h1>
+		<p>Tiempos de micro en tiempo real</p>
+	</header>
+
+	<Monitor client:load />
+</Layout>
