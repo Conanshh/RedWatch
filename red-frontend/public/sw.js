@@ -1,7 +1,7 @@
 // public/sw.js
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : { 
-    title: 'RedHuawei', 
+    title: 'RedWatch', 
     body: 'Actualización de tiempos',
     mode: 'multiple' 
   };
@@ -12,7 +12,7 @@ self.addEventListener('push', (event) => {
     badge: '/favicon.ico',
     vibrate: [200, 100, 200],
     // Si el modo es 'single', usamos un tag fijo para que se sobrescriba
-    tag: data.mode === 'single' ? 'red-huawei-update' : undefined,
+    tag: data.mode === 'single' ? 'redwatch-update' : undefined,
     renotify: data.mode === 'single' ? false : true
   };
 
