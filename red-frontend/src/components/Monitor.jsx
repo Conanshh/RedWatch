@@ -17,10 +17,15 @@ export default function Monitor() {
   const [favoritos, setFavoritos] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [showTooltip, setShowTooltip] = useState(false);
+  
+  // RE-AGREGADO: Lógica de Auto-refresh
+  const [countdown, setCountdown] = useState(30);
 
   const searchWrapperRef = useRef(null);
   const stepIntervalRef = useRef(null);
+  const refreshTimerRef = useRef(null);
 
+  // Carga inicial y clicks fuera
   useEffect(() => {
     const savedFavs = localStorage.getItem('fav_paraderos');
     const savedHist = localStorage.getItem('hist_paraderos');
@@ -37,10 +42,27 @@ export default function Monitor() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Lógica del contador de refresco
+  useEffect(() => {
+    if (datos && !loading) {
+      refreshTimerRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            consultarAPI(input, true); // Refresco silencioso
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(refreshTimerRef.current);
+  }, [datos, loading, input]);
+
   useEffect(() => {
     localStorage.setItem('fav_paraderos', JSON.stringify(favoritos));
   }, [favoritos]);
 
+  // Sugerencias
   useEffect(() => {
     if (!showSug) { setSugerencias([]); return; }
     const q = (input || '').trim().toUpperCase();
@@ -52,16 +74,26 @@ export default function Monitor() {
     setSelectedIndex(-1);
   }, [input, favoritos, historial, showSug]);
 
-  const consultarAPI = async (codigo) => {
+  const consultarAPI = async (codigo, isRefresh = false) => {
     if (!codigo) return;
     const codFinal = String(codigo).trim().toUpperCase();
     setInput(codFinal);
     setShowSug(false);
-    setLoading(true); setDatos(null); setStep(0);
     
-    stepIntervalRef.current = setInterval(() => {
-      setStep(s => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
-    }, 800);
+    if (!isRefresh) {
+        setLoading(true); 
+        setDatos(null); 
+        setStep(0);
+        setErrorMsg(null);
+    }
+    
+    setCountdown(30);
+
+    if (!isRefresh) {
+        stepIntervalRef.current = setInterval(() => {
+            setStep(s => (s < LOADING_STEPS.length - 1 ? s + 1 : s));
+        }, 800);
+    }
 
     try {
       const res = await fetch(`${API_URL}/paradero/${codFinal}`);
@@ -70,7 +102,7 @@ export default function Monitor() {
       setDatos(data);
       if (!historial.includes(codFinal)) setHistorial(prev => [codFinal, ...prev].slice(0, 10));
     } catch (e) {
-      setErrorMsg(e.message);
+      if (!isRefresh) setErrorMsg(e.message);
     } finally {
       setLoading(false);
       clearInterval(stepIntervalRef.current);
@@ -112,7 +144,6 @@ export default function Monitor() {
           />
           <button className="btn-ir" onClick={() => consultarAPI(input)}>Ir</button>
           
-          {/* RECOMENDACIONES: Ahora dentro de search-group para posicionamiento absoluto real */}
           {showSug && sugerencias.length > 0 && (
             <ul className="sug-list">
               {sugerencias.map((s, i) => (
@@ -150,6 +181,8 @@ export default function Monitor() {
                 </div>
               )}
             </div>
+            {/* TIMER AGREGADO AQUÍ */}
+            {datos && <span className="refresh-tag">Siguiente: {countdown}s</span>}
           </div>
           
           <div className="mode-switch">
@@ -163,6 +196,7 @@ export default function Monitor() {
         {errorMsg && <div className="error-box">⚠️ {errorMsg}</div>}
         {datos && (
           <div className="bus-results">
+            {/* Título ahora con margen superior para no ser comido por el sticky */}
             <h2 className="paradero-title">{datos.paradero}</h2>
             {datos.notificacion.split('\n').filter(l => l.trim()).map((line, i) => (
               <div key={i} className="bus-card">{line}</div>
@@ -178,37 +212,27 @@ export default function Monitor() {
         .loading-content { display: flex; flex-direction: column; align-items: center; }
         .spinner { width: 40px; height: 40px; border: 4px solid #222; border-top-color: #e00; border-radius: 50%; animation: spin 1s infinite linear; margin-bottom: 15px; }
 
-        .search-section { position: sticky; top: 0; z-index: 1000; background: #000; padding: 10px 0; border-bottom: 1px solid #111; }
+        /* HEADER STICKY ARREGLADO */
+        .search-section { position: sticky; top: -1px; z-index: 1000; background: #000; padding: 10px 0 15px 0; border-bottom: 1px solid #111; }
         .search-group { display: flex; gap: 8px; position: relative; margin-bottom: 12px; }
         .main-input { flex: 1; background: #111; border: 2px solid #333; color: #fff; padding: 14px; border-radius: 12px; font-size: 1rem; outline: none; }
         .btn-ir { background: #e00; color: #fff; border: none; padding: 0 20px; border-radius: 12px; font-weight: 900; }
 
-        /* RECOMENDACIONES SOBRE TODO */
-        .sug-list { 
-          position: absolute; 
-          top: calc(100% + 5px); 
-          left: 0; 
-          right: 0; 
-          background: #161616; 
-          border: 1px solid #333; 
-          border-radius: 12px; 
-          z-index: 2000; 
-          box-shadow: 0 15px 50px rgba(0,0,0,0.9); 
-          max-height: 280px; 
-          overflow-y: auto; 
-          padding: 0; 
-          margin: 0;
-        }
+        /* SUGERENCIAS */
+        .sug-list { position: absolute; top: calc(100% + 5px); left: 0; right: 0; background: #161616; border: 1px solid #333; border-radius: 12px; z-index: 2000; box-shadow: 0 15px 50px rgba(0,0,0,0.9); max-height: 280px; overflow-y: auto; padding: 0; margin: 0; }
         .sug-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid #222; cursor: pointer; }
         .sug-item.active { background: #00d1ff15; color: #00d1ff; }
         .sug-fav-btn { background: none; border: none; color: #444; font-size: 1.2rem; cursor: pointer; }
         .sug-fav-btn.is-fav { color: #ffd700; }
 
-        .notif-bar-inline { display: flex; align-items: center; justify-content: space-between; }
-        .notif-label-group { display: flex; align-items: center; gap: 6px; }
+        .notif-bar-inline { display: flex; align-items: center; justify-content: space-between; height: 32px; }
+        .notif-label-group { display: flex; align-items: center; gap: 8px; }
         .label-text { font-size: 0.8rem; color: #666; font-weight: 600; }
         .info-icon { background: none; border: none; color: #00d1ff; font-size: 1.1rem; cursor: pointer; padding: 0; }
         
+        /* ESTILO DEL TIMER */
+        .refresh-tag { font-size: 0.75rem; color: #00ff88; font-family: monospace; background: #003311; padding: 2px 8px; border-radius: 4px; }
+
         .tooltip-popover { position: absolute; top: 100%; left: 0; width: 220px; background: #1a1a1a; border: 1px solid #333; padding: 12px; border-radius: 10px; z-index: 1500; margin-top: 10px; }
         .tooltip-popover p { margin: 0 0 6px 0; font-size: 0.75rem; color: #aaa; line-height: 1.4; }
 
@@ -216,9 +240,10 @@ export default function Monitor() {
         .switch-btn { border: none; background: none; color: #555; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
         .switch-btn.active { background: #222; color: #00d1ff; }
 
-        .content-area { padding-top: 20px; }
-        .paradero-title { color: #e00; font-size: 1.3rem; margin-bottom: 15px; }
-        .bus-card { background: #0a0a0a; border: 1px solid #222; padding: 15px; border-radius: 12px; border-left: 4px solid #e00; margin-bottom: 10px; font-family: monospace; }
+        /* CONTENIDO - Arreglado el PB que se come */
+        .content-area { padding-top: 10px; }
+        .paradero-title { color: #e00; font-size: 1.5rem; margin: 15px 0; font-weight: 900; }
+        .bus-card { background: #0a0a0a; border: 1px solid #222; padding: 15px; border-radius: 12px; border-left: 4px solid #e00; margin-bottom: 10px; font-family: monospace; font-size: 1rem; }
 
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
