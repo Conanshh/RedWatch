@@ -8,7 +8,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permite que cualquier dispositivo (celular/reloj) consulte
+    allow_origins=[
+        "https://tu-proyecto-frontend.vercel.app", # URL de Vercel
+        "http://localhost:3000"                    # Para seguir probando local
+    ], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

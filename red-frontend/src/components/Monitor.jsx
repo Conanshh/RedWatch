@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 const BASE_PARADEROS = ["PB719", "PB720", "PC123", "PA456", "PD789"]; 
 const LOADING_STEPS = ["Conectando...", "Consultando Red...", "Procesando...", "Casi listo..."];
 
+// URL dinámica: En Vercel usará la de Render, en local usará localhost
+const API_URL = process.env.API_URL || "http://localhost:8000";
+
 export default function Monitor() {
   const [input, setInput] = useState('');
   const [sugerencias, setSugerencias] = useState([]);
@@ -23,8 +26,6 @@ export default function Monitor() {
   const countdownIntervalRef = useRef(null);
   const stepIntervalRef = useRef(null);
   const searchWrapperRef = useRef(null);
-
-  const lastTagRef = useRef(null);
   
   // Solución al problema de clausura: modeRef siempre tiene el valor actual de notifMode
   const modeRef = useRef(notifMode);
@@ -163,7 +164,7 @@ export default function Monitor() {
     }
     
     try {
-      const res = await fetch(`http://localhost:8000/paradero/${codFinal}`);
+      const res = await fetch(`${API_URL}/paradero/${codFinal}`);
       if (!res.ok) throw new Error("No encontrado");
       const data = await res.json();
       setDatos(data);
