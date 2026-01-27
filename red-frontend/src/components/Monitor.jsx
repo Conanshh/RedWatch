@@ -20,6 +20,7 @@ export default function Monitor() {
   const [notifMode, setNotifMode] = useState('single'); 
   const [favoritos, setFavoritos] = useState([]);
   const [historial, setHistorial] = useState([]);
+  const [showTooltip, setShowTooltip] = React.useState(false);
 
   // REFERENCIAS PARA EL INTERVALO Y ESTADO PERSISTENTE
   const refreshIntervalRef = useRef(null);
@@ -209,8 +210,20 @@ export default function Monitor() {
 
         <div className="notif-settings">
           <span>Notificaciones:</span>
+            <button 
+              className="info-icon" 
+              onMouseEnter={() => setShowTooltip(true)} 
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={() => setShowTooltip(!showTooltip)}
+            >ⓘ</button>
+            {showTooltip && (
+              <div className="tooltip-popover">
+                <p><strong>Fijas:</strong> Una sola notificación que se va actualizando.</p>
+                <p><strong>Múltiples:</strong> Una notificación nueva por cada actualización.</p>
+              </div>
+            )}
           <button className={`mode-btn ${notifMode === 'single' ? 'active' : ''}`} onClick={() => setNotifMode('single')}>Fijas</button>
-          <button className={`mode-btn ${notifMode === 'multiple' ? 'active' : ''}`} onClick={() => setNotifMode('multiple')}>Vibrar Siempre</button>
+          <button className={`mode-btn ${notifMode === 'multiple' ? 'active' : ''}`} onClick={() => setNotifMode('multiple')}>Múltiples</button>
         </div>
 
         {showSug && sugerencias.length > 0 && (
@@ -328,6 +341,38 @@ export default function Monitor() {
         
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+      .info-icon { 
+        background: none; 
+        border: none; 
+        color: #00d1ff; 
+        cursor: pointer; 
+        padding: 0; 
+        font-size: 0.9rem; 
+      }
+
+      .tooltip-popover { 
+        position: absolute; 
+        top: 100%; 
+        left: 0; 
+        width: 180px; 
+        background: #1a1a1a; 
+        border: 1px solid #333; 
+        padding: 10px; 
+        border-radius: 8px; 
+        z-index: 2000; 
+        margin-top: 8px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      }
+
+      .tooltip-popover p { 
+        margin: 0 0 5px; 
+        font-size: 0.7rem; 
+        color: #ccc; 
+        line-height: 1.3;
+      }
+
+      .tooltip-popover strong { color: #00d1ff; }
       `}</style>
     </div>
   );
