@@ -4,9 +4,7 @@ import logging
 import psycopg2
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-from main import obtener_tiempos
-import threading
-import uvicorn 
+from main import obtener_tiempos 
 
 # Configuración de logs del sistema
 logging.basicConfig(
@@ -177,21 +175,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='Markdown'
         )
 
-def run_api():
-    # Esta función corre la API de FastAPI
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, log_level="info")
-
 if __name__ == '__main__':
     print("DEBUG: Intentando iniciar el bot...")
     if not TOKEN or not DB_URL:
         print("❌ Error: Faltan variables de entorno (TELEGRAM_TOKEN o DATABASE_URL).")
     else:
-        # 1. Lanzamos FastAPI en un hilo separado (daemon para que muera si el bot muere)
-        api_thread = threading.Thread(target=run_api, daemon=True)
-        api_thread.start()
-        print("🚀 API levantada en hilo secundario...")
-
         app = ApplicationBuilder().token(TOKEN).build()
         
         # Handlers
