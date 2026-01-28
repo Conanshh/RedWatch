@@ -1,6 +1,10 @@
 import os
 import psycopg2
 import logging
+from dotenv import load_dotenv
+
+# Cargar las variables del archivo .env
+load_dotenv()
 
 # Configurar logs
 logging.basicConfig(level=logging.INFO)

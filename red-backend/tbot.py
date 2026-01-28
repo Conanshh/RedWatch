@@ -4,7 +4,6 @@ import logging
 import psycopg2
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
-# Asegúrate de que main.py esté en la misma carpeta
 from main import obtener_tiempos 
 
 # Configuración de logs del sistema
@@ -51,14 +50,28 @@ def obtener_favs(user_id: int) -> dict:
 async def tarea_monitoreo(chat_id: int, user_id: int, paradero: str, context: ContextTypes.DEFAULT_TYPE):
     print(f"DEBUG: [Iniciando Bucle] Usuario: {user_id}, Paradero: {paradero}")
     try:
+        es_primer_ciclo = True
         while True:
             # Feedback visual de "Escribiendo..." en Telegram
             await context.bot.send_chat_action(chat_id=chat_id, action="typing")
             
+            # --- LÓGICA DE DETECCIÓN DE DESPERTAR ---
+            task_api = asyncio.create_task(obtener_tiempos(paradero))
             print(f"DEBUG: [Scraping] Llamando a obtener_tiempos para {paradero}...")
+            # Si es el primer mensaje, esperamos un poco y avisamos si se demora
+            if es_primer_ciclo:
+                done, pending = await asyncio.wait([task_api], timeout=25)
+                if task_api in pending:
+                    await context.bot.send_message(
+                        chat_id=chat_id, 
+                        text="💤 *El servidor está despertando...*\nEsto tomará 3-4 minutos, luego cada cambio llegará en menos de 1 minuto.",
+                        parse_mode='Markdown'
+                    )
+
+            # Esperamos el resultado real (sin importar cuánto tarde)
+            datos = await task_api 
+            es_primer_ciclo = False # Ya despertó o ya pasó el primer intento
             
-            # BLINDAJE DE TIPOS AL RECIBIR DATOS
-            datos = await obtener_tiempos(paradero)
             print(f"DEBUG: [Resultado Scraping] {datos}")
             
             if datos is not None and isinstance(datos, dict) and 'notificacion' in datos:
@@ -132,7 +145,7 @@ async def stop(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def fav(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.effective_user or not update.message or not context.args or len(context.args) < 2:
         if update.message:
-            await update.message.reply_text("❌ Uso: `/fav [código] [nombre]`\nEj: `/fav PB719 casa`")
+            await update.message.reply_text("❌ Uso: `/fav [código] [nombre]`\nEj: `/fav PB820 casa`")
         return
     
     p_id = str(context.args[0]).upper()
@@ -153,11 +166,12 @@ async def ver(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.message:
         await update.message.reply_text(
-            "🚌 **RedWatch Pro**\n\n"
-            "`/p PB719` - Monitoreo directo\n"
-            "`/fav PB719 casa` - Guardar favorito\n"
+            "🚌 **RedWatch**\n\n"
+            "`/p PB820` - Monitoreo directo\n"
+            "`/fav PB820 casa` - Guardar favorito\n"
             "`/p casa` - Usar alias\n"
-            "`/stop` - Detener todo",
+            "`/stop` - Detener todo\n\n"
+            "⚠️ _Nota: Si es la primera consulta, el servidor puede tardar 3-4 min en despertar por estar alojado en una tier gratis._",
             parse_mode='Markdown'
         )
 
